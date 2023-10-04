@@ -1,0 +1,134 @@
+ # Import the random module for random selections
+import random
+
+# Define the number of workdays in a week
+DAYS_IN_A_WEEK = 7
+
+# Initialize an empty schedule dictionary to store staff schedules
+schedule = {}
+
+# Define shift types, including "None"
+shift_types = ["Morning", "Afternoon", "Night", "None"]
+
+# Define days of the week
+days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
+# Create an empty list to store staff information
+staff_list = []
+
+# Ask for the number of staff members
+num_staff = int(input("Enter the number of staff members: "))
+
+# Collect staff names, employment type, and their availability
+for i in range(num_staff):
+    # Prompt for staff member's name
+    staff_name = input(f"Enter the name of staff member {i + 1}: ")
+    
+    # Prompt for employment type (full-time or part-time)
+    employment_type = input(f"Is {staff_name} full-time or part-time? (F/P): ").strip().lower()
+    
+    # Validate employment type input
+    if employment_type not in ['f', 'p']:
+        print("Invalid input. Please enter 'F' for full-time or 'P' for part-time.")
+        continue
+    
+    # Define the maximum weekly hours based on employment type
+    max_weekly_hours = 40 if employment_type == 'f' else 32
+    
+    # Create an empty list to represent the staff member's schedule
+    staff_schedule = []
+    
+    # Loop to collect availability for each day
+    for day in days_of_week:
+        # Prompt for the shift type (Morning, Afternoon, Night, or None)
+        shift_type = input(f"Enter the shift type for {staff_name} on {day} ({', '.join(shift_types)}): ").capitalize()
+        
+        # Validate the shift type input, including "None"
+        if shift_type not in shift_types:
+            print("Invalid shift type input. Please enter a valid shift type.")
+            continue
+        
+        # If shift type is "None," set hours to 0; otherwise, prompt for hours
+        if shift_type == "None":
+            hours = 0.0
+        else:
+            while True:
+                try:
+                    hours = float(input(f"How many hours for {shift_type} on {day}? (Max {max_weekly_hours} hours per week) "))
+                    if hours > max_weekly_hours:
+                        print(f"Invalid input. Maximum {max_weekly_hours} hours allowed per week for {employment_type} staff.")
+                        continue
+                    break
+                except ValueError:
+                    print("Invalid input. Please enter a valid number of hours.")
+        
+        # Add the shift type and hours to the day's schedule
+        day_schedule = {
+            "Day": day,
+            "Shift Type": shift_type,
+            "Hours": hours
+        }
+        staff_schedule.append(day_schedule)
+    
+    # Create a dictionary to store staff information
+    staff_info = {
+        "Name": staff_name,
+        "Employment Type": employment_type,
+        "Schedule": staff_schedule
+    }
+    
+    # Add the staff member's information to the staff list
+    staff_list.append(staff_info)
+
+# Automated conflict resolution function
+def resolve_conflicts():
+    for day in days_of_week:
+        # Create a dictionary to track staff members scheduled for each shift type on this day
+        shift_type_counts = {shift_type: 0 for shift_type in shift_types}
+        
+        for staff in staff_list:
+            staff_schedule = staff["Schedule"]
+            
+            for day_schedule in staff_schedule:
+                if day_schedule["Day"] == day:
+                    shift_type = day_schedule["Shift Type"]
+                    hours = day_schedule["Hours"]
+                    
+                    # Ensure that shift_type is not an empty string or "None"
+                    if shift_type and shift_type != "None":
+                        shift_type_counts[shift_type] += 1
+        
+        # Check if no one is scheduled for this day
+        if all(count == 0 for count in shift_type_counts.values()):
+            # If no one is scheduled, assign one staff member randomly
+            random_staff = random.choice(staff_list)
+            
+            for day_schedule in random_staff["Schedule"]:
+                if day_schedule["Day"] == day:
+                    day_schedule["Shift Type"] = random.choice(shift_types)
+        
+        # Check for conflicts and adjust the schedule if needed
+        for shift_type, count in shift_type_counts.items():
+            if count > 1:
+                # Resolve conflicts by reducing the hours of staff members with overlapping shifts
+                for staff in staff_list:
+                    staff_schedule = staff["Schedule"]
+                    
+                    for day_schedule in staff_schedule:
+                        if day_schedule["Day"] == day and day_schedule["Shift Type"] == shift_type:
+                            day_schedule["Hours"] = day_schedule["Hours"] / count
+
+# Resolve conflicts
+resolve_conflicts()
+
+# Print the generated schedule
+print("\nGenerated Schedule:")
+print("Staff Member\tDay\tShift Type\tHours")
+for staff in staff_list:
+    staff_name = staff["Name"]
+    for day_schedule in staff["Schedule"]:
+        day = day_schedule["Day"]
+        shift_type = day_schedule["Shift Type"]
+        hours = day_schedule["Hours"]
+        if shift_type:
+            print(f"{staff_name}\t{day}\t{shift_type}\t{hours} hours")
